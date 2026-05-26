@@ -23,7 +23,6 @@ class OpenAIClient:
         }
         if tools:
             params["tools"] = tools
-        if tool_choice:
             params["tool_choice"] = tool_choice
 
         response = self.client.chat.completions.create(**params)

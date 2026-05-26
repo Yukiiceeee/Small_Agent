@@ -1,9 +1,20 @@
 from src.agent import Agent
 from src.client import OpenAIClient
 from tools import TOOL_MAP, TOOL_SCHEMAS
-from prompt import SYS_PROMPT
+from prompt import SYS_PROMPT, REACT_SYS_PROMPT
 from configs.config import load_config
 from src.workflows.base import BaseWorkflow
+from src.workflows.simple_loop import SimpleWorkflow
+from src.workflows.react import ReActWorkflow
+from src.workflows.reflection import ReflectionWorkflow
+from src.workflows.plan_execute import PlanExecuteWorkflow
+
+WORKFLOW_REGISTRY = {
+      "simple": (SimpleWorkflow, SYS_PROMPT),
+      "react": (ReActWorkflow, REACT_SYS_PROMPT),
+      "reflection": (ReflectionWorkflow, SYS_PROMPT),
+      "plan_execute": (PlanExecuteWorkflow, SYS_PROMPT),
+  }
 
 def main():
     llm_config, agent_config, workflow_config = load_config()
@@ -13,44 +24,17 @@ def main():
             llm_config
         )
     elif llm_config.client.lower() == "anthropic":
-        from src.client import AnthropicClient
+        from .src.client import AnthropicClient
         client = AnthropicClient(
             llm_config
         )
     else:
         raise ValueError(f"不支持的LLM客户端: {llm_config.client}")
     
-    if workflow_config.type == "simple":
-        from src.workflows.simple_loop import SimpleWorkflow
-        workflow = SimpleWorkflow(
-            client=client,
-            tool_schemas=TOOL_SCHEMAS,
-            tool_map=TOOL_MAP,
-            max_turns=agent_config.max_turns,
-        )
-
-        agent = Agent(
-        name=agent_config.name,
-        sys_prompt=SYS_PROMPT,
-        workflow=workflow,
-    )
-    elif workflow_config.type == "react":
-        from src.workflows.react import ReActWorkflow
-        workflow = ReActWorkflow(
-            client=client,
-            tool_schemas=TOOL_SCHEMAS,
-            tool_map=TOOL_MAP,
-            max_turns=agent_config.max_turns,
-        )
-
-        agent = Agent(
-        name=agent_config.name,
-        sys_prompt=SYS_PROMPT,
-        workflow=workflow,
-    )
-    else:
-        raise ValueError(f"不支持的工作流类型: {workflow_config.type}")
-
+    workflow_cls, sys_prompt = WORKFLOW_REGISTRY[workflow_config.type]
+    workflow = workflow_cls(client=client, tool_schemas=TOOL_SCHEMAS, tool_map=TOOL_MAP,
+                            max_turns=agent_config.max_turns)
+    agent = Agent(name=agent_config.name, sys_prompt=sys_prompt, workflow=workflow)
     agent.run()
 
 if __name__ == '__main__':
