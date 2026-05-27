@@ -4,7 +4,7 @@ class ReActWorkflow(BaseWorkflow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def run(self, messages):
+    async def run(self, messages):
         # ReAct workflow:
         # 1. Think
         # 2. Act (call tool)
@@ -21,7 +21,7 @@ class ReActWorkflow(BaseWorkflow):
             if result.has_tool_calls():
                 for tc in result.tool_calls:
                     print(f"  [Action] Calling tool: {tc.name} with args: {tc.args}")
-                    output = self._execute_tool(tc.name, tc.args)
+                    output = await self._execute_tool(tc.name, tc.args)
                     print(f"  [Observation] Tool output: {output}")
                     messages.extend(self.client.build_tool_result_message([(tc, output)]))
             else:

@@ -4,7 +4,7 @@ class PlanExecuteWorkflow(BaseWorkflow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def run(self, messages):
+    async def run(self, messages):
         # plan & execute workflow:
         # 1. plan (think and generate a plan)
         # 2. execute (call tools according to the plan)
@@ -18,7 +18,7 @@ class PlanExecuteWorkflow(BaseWorkflow):
         messages.append(self.client.build_assistant_message(result))
         if result.has_tool_calls():
             for tc in result.tool_calls:
-                output = self._execute_tool(tc.name, tc.args)
+                output = await self._execute_tool(tc.name, tc.args)
                 messages.extend(self.client.build_tool_result_message([(tc, output)]))
         
         # execute phase
@@ -29,7 +29,7 @@ class PlanExecuteWorkflow(BaseWorkflow):
 
             if result.has_tool_calls():
                 for tc in result.tool_calls:
-                    output = self._execute_tool(tc.name, tc.args)
+                    output = await self._execute_tool(tc.name, tc.args)
                     messages.extend(self.client.build_tool_result_message([(tc, output)]))
             else:
                 self._log_messages(messages)

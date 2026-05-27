@@ -5,7 +5,7 @@ class ReflectionWorkflow(BaseWorkflow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def run(self, messages):
+    async def run(self, messages):
         # Reflection:
         # 1. Answer the question
         # 2. Reflect on the answer
@@ -17,7 +17,7 @@ class ReflectionWorkflow(BaseWorkflow):
             if result.has_tool_calls():
                 tool_results = []
                 for tc in result.tool_calls:
-                    output = self._execute_tool(tc.name, tc.args)
+                    output = await self._execute_tool(tc.name, tc.args)
                     tool_results.append((tc, output))
                 messages.extend(self.client.build_tool_result_message(tool_results))
             else:

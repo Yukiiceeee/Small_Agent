@@ -19,7 +19,7 @@ class AgentConfig:
     max_turns: int = 10
 
 class WorkflowConfig:
-    type: str = "plan_execute"
+    type: str = "simple"  # simple, react, reflection, plan_execute
 
 def load_config():
     llm_config = LLMConfig()

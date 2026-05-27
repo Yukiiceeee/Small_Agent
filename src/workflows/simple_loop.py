@@ -4,10 +4,10 @@ from .base import BaseWorkflow
 import json
 
 class SimpleWorkflow(BaseWorkflow):
-    def __init__(self, client, tool_schemas, tool_map, max_turns):
-        super().__init__(client, tool_schemas, tool_map, max_turns)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    def run(self, messages):
+    async def run(self, messages):
         # Simple loop: 
         # LLM response -> 
         # execute tools -> 
@@ -21,7 +21,7 @@ class SimpleWorkflow(BaseWorkflow):
             if result.has_tool_calls():
                 tool_results = []
                 for tc in result.tool_calls:
-                    output = self._execute_tool(tc.name, tc.args)
+                    output = await self._execute_tool(tc.name, tc.args)
                     tool_results.append((tc, output))
                 messages.extend(self.client.build_tool_result_message(tool_results))
             else:

@@ -3,27 +3,28 @@ import json
 from typing import List, Dict, Any
 
 class BaseWorkflow(ABC):
-    def __init__(self, client, tool_schemas, tool_map, max_turns):
+    def __init__(self, client, max_turns, mcp_manager=None):
         self.client = client
-        self.tool_schemas = tool_schemas
-        self.tool_map = tool_map
         self.max_turns = max_turns
-    
+        self.mcp_manager = mcp_manager
+        if client.__class__.__name__ == "OpenAIClient":
+            self.tool_schemas = self.mcp_manager.get_openai_schemas() if self.mcp_manager else []
+        else:
+            self.tool_schemas = []
+
     @abstractmethod
-    def run(self, messages) -> str:
+    async def run(self, messages) -> str:
         """
           接收当前消息历史，执行编排逻辑，返回最终文本回复。
           内部自行管理 LLM 调用次数、工具调用、消息追加。
           """
         pass
 
-    def _execute_tool(self, tool_name, tool_args):
-        if tool_name not in self.tool_map:
-            return f"未知工具: {tool_name}"
-        try:
-              return self.tool_map[tool_name](tool_args)
-        except Exception as e:
-              return json.dumps({"error": str(e)}, ensure_ascii=False)
+    async def _execute_tool(self, tool_name, tool_args):
+        if self.mcp_manager:
+            return await self.mcp_manager.call_tool(tool_name, tool_args)
+        else:
+            raise NotImplementedError("工具执行需要 MCPManager 支持。")
 
     def _log_messages(self, messages):
         print("\n========== Messages Log ==========")
