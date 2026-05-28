@@ -3,7 +3,7 @@ from src.agent import Agent
 from src.client import OpenAIClient
 # from tools import TOOL_MAP, TOOL_SCHEMAS
 from prompt import SYS_PROMPT, REACT_SYS_PROMPT
-from configs.config import load_config
+from configs.config import load_config, load_mcp_config
 from src.workflows.base import BaseWorkflow
 from src.workflows.simple_loop import SimpleWorkflow
 from src.workflows.react import ReActWorkflow
@@ -34,13 +34,7 @@ async def main():
         raise ValueError(f"不支持的LLM客户端: {llm_config.client}")
     
     mcp_manager = MCPManager()
-    server_configs = [
-        {
-            "name": "my_server",
-            "command": "python",
-            "args": ["mcp_servers/my_tools_server.py"]
-        },
-    ]
+    server_configs = load_mcp_config()
     await mcp_manager.connect(server_configs)
     
     workflow_cls, sys_prompt = WORKFLOW_REGISTRY[workflow_config.type]

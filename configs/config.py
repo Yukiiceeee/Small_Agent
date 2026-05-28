@@ -1,6 +1,7 @@
 import os
 import dotenv
 from dataclasses import dataclass, field
+import yaml
 
 dotenv.load_dotenv()
 
@@ -26,3 +27,9 @@ def load_config():
     agent_config = AgentConfig()
     workflow_config = WorkflowConfig()
     return llm_config, agent_config, workflow_config
+
+def load_mcp_config() -> list[dict]:
+      config_path = os.path.join(os.path.dirname(__file__), "mcp_servers.yaml")
+      with open(config_path, "r") as f:
+          config = yaml.safe_load(f)
+      return config.get("mcp_servers", [])

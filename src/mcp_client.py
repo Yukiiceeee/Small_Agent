@@ -11,26 +11,37 @@ class MCPManager:
 
     async def connect(self, server_configs: list[dict]) -> None:
         for config in server_configs:
-            params = StdioServerParameters(
-                command=config["command"],
-                args=config["args"]
-            )
-            transport = await self._exit_stack.enter_async_context(
-                stdio_client(params)
-            )
-            read_stream, write_stream = transport
+            name = config.get("name", "unknown")
+            try:
+                params = StdioServerParameters(
+                    command=config["command"],
+                    args=config.get("args", []),
+                    env=config.get("env"),
+                )
+                transport = await self._exit_stack.enter_async_context(
+                    stdio_client(params)
+                )
+                read_stream, write_stream = transport
 
-            session = await self._exit_stack.enter_async_context(
-                ClientSession(read_stream, write_stream)
-            )
+                session = await self._exit_stack.enter_async_context(
+                    ClientSession(read_stream, write_stream)
+                )
 
-            await session.initialize()
-            response = await session.list_tools()
-            for tool in response.tools:
-                self._tool_to_session[tool.name] = session
-                self.tools.append(tool)
-            
-            print(f"Connected to {config['name']} server, found tools: {[t.name for t in response.tools]}")
+                await session.initialize()
+                response = await session.list_tools()
+
+                for tool in response.tools:
+                    if tool.name in self._tool_to_session:
+                        print(f"  [Warning] Tool name conflict: '{tool.name}' from '{name}' shadows existing tool, skipped.")
+                        continue
+                    self._tool_to_session[tool.name] = session
+                    self.tools.append(tool)
+
+                print(f"[OK] Connected to '{name}', tools: {[t.name for t in response.tools]}")
+
+            except Exception as e:
+                print(f"[FAIL] Failed to connect to '{name}': {e}")
+                continue
 
     def get_openai_schemas(self) -> list[dict]:
         """将 MCP tool schema 转换为 OpenAI function calling 格式"""
